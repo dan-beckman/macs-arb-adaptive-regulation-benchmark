@@ -4,7 +4,8 @@ WINDOW   = hanning(NFFT);
 NOVERLAP = NFFT/2;
 N        =length(x)/NOVERLAP-1;		% Le nombre de moyennes
 fprintf(1,'Spectre estimé avec %d moyennes\n',floor(N));
-[Pxx,F]  = psd(x,NFFT,Fs,WINDOW,NOVERLAP);
+% [Pxx,F]  = psd(x,NFFT,Fs,WINDOW,NOVERLAP);
+[Pxx,F] = pwelch(x,WINDOW,NOVERLAP,NFFT,Fs);
 
 WINDOW_COR = norm(WINDOW)^2/sum(WINDOW)^2;
 XX_pic   = 2*sqrt(Pxx*WINDOW_COR);

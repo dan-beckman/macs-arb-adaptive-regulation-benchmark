@@ -34,17 +34,35 @@ bode_opt.PhaseWrapping = 'On';
 %       FLAG_DIST_FREQ = 0 ------ step changing disturbance frequency
 %       FLAG_DIST_FREQ = 1 ------ constant disturbance frequency
 %       FLAG_DIST_FREQ = 2 ------ chirp disturbance
-disp('=============Multiple Narrow Band Disturbance Rejection============')
-disp('=============       Adaptive Disturbance Observer      ============')
-disp('===================================================================')
-disp('SELECT TEST OPTIONS:')
-disp('0 (default) ---- step changing disturbance frequency')
-disp('1           ---- constant disturbance frequency')
-disp('2           ---- chirp disturbance')
-disp('   ')
-disp('Press ENTER for default selection.')
+%       
+%       SW_ONE_SIMU_TEST = 1 ------ quick sample test
+%       SW_ONE_SIMU_TEST = 0 ------ entire freq. profile specified by benchmark
+%       
+%       SW_SAVE_DATA = 1 ------ save data
+%       SW_SAVE_DATA = 0 ------ don't save data
+%
+%       SW_UNIFORM_ADAP = 1 ------ uniform adaptation gain (conservative)
+%       SW_UNIFORM_ADAP = 0 ------ variable adaptation gain
+
+FLAG_DIST_FREQ = 1;
+SW_ONE_SIMU_TEST = 1;
+SW_SAVE_DATA = 0;
+SW_UNIFORM_ADAP = 1;
+
+% SW_BASELINE_CONTROL_SYS = 1;
+
+% disp('=============Multiple Narrow Band Disturbance Rejection============')
+% disp('=============       Adaptive Disturbance Observer      ============')
+% disp('===================================================================')
+% disp('SELECT TEST OPTIONS:')
+% disp('0 (default) ---- step changing disturbance frequency')
+% disp('1           ---- constant disturbance frequency')
+% disp('2           ---- chirp disturbance')
+% disp('   ')
+% disp('Press ENTER for default selection.')
+
 while 1
-    FLAG_DIST_FREQ = input(':');
+%     FLAG_DIST_FREQ = input(':');
     if isempty(FLAG_DIST_FREQ)
         FLAG_DIST_FREQ      = 0;
     end
@@ -59,14 +77,14 @@ if ~exist('FLAG_DIST_FREQ','var')
     FLAG_DIST_FREQ = FLAG_STEP_CHANGE_DIST_FREQ;
 end
 
-disp('===================================================================')
-disp('CHOOSE THE TEST LENGTH:')
-disp('1 (default) ---- a quick sample test')
-disp('0           ---- the entire frequency profile specified by the benchmark')
-disp('   ')
-disp('Press ENTER for default selection.')
+% disp('===================================================================')
+% disp('CHOOSE THE TEST LENGTH:')
+% disp('1 (default) ---- a quick sample test')
+% disp('0           ---- the entire frequency profile specified by the benchmark')
+% disp('   ')
+% disp('Press ENTER for default selection.')
 while 1
-    SW_ONE_SIMU_TEST = input(':');
+%     SW_ONE_SIMU_TEST = input(':');
     if isempty(SW_ONE_SIMU_TEST)
         SW_ONE_SIMU_TEST      = 1;
     end
@@ -77,10 +95,10 @@ while 1
     end
 end
 
-disp('===================================================================')
-disp('CHOOSE WHETHER OR NOT TO SAVE THE TEST DATA.')
+% disp('===================================================================')
+% disp('CHOOSE WHETHER OR NOT TO SAVE THE TEST DATA.')
 while 1
-    SW_SAVE_DATA = input('Save the test result?\n   1(default, press ENTER): yes\n   0: no\n:');
+%     SW_SAVE_DATA = input('Save the test result?\n   1(default, press ENTER): yes\n   0: no\n:');
     if isempty(SW_SAVE_DATA)
         SW_SAVE_DATA        = 1;
     end
@@ -91,10 +109,10 @@ while 1
     end
 end
 
-disp('===================================================================')
-disp('ADAPTATION SCHEME.')
+% disp('===================================================================')
+% disp('ADAPTATION SCHEME.')
 while 1
-    SW_UNIFORM_ADAP = input('Uniform adaptation gain? (more conservative performance)\n   1(default, press ENTER): yes\n   0: no\n:');
+%     SW_UNIFORM_ADAP = input('Uniform adaptation gain? (more conservative performance)\n   1(default, press ENTER): yes\n   0: no\n:');
     if isempty(SW_UNIFORM_ADAP)
         SW_UNIFORM_ADAP        = 1;
     end
@@ -106,6 +124,7 @@ while 1
 end
 
 FLAG_PERFORMANCE_EVAL       = 0;
+
 %%
 NBn                         = 1; % number of narrow bands
 % chirp distrubance parameters
@@ -124,6 +143,8 @@ chirp_dist.freq2_dur_time   = 5;
 % denoise_filter = tf(BP_ss_simulink)*tf(BP_ss_simulink);%2012-08-03
 load band_pass_coef_50To95
 denoise_filter = tf(conv(numBP,numBP),conv(denBP,denBP),Ts);
+bode(denoise_filter,bode_opt);
+title('Frequency response of the noise filter');
 %% Adaptation parameters
 % forgetting factor
 adap_method = 2;
@@ -165,12 +186,14 @@ load bruitbench
 
 if SW_BASELINE_CONTROL_SYS
     figure;
-    bodeplot(tf(R,S,Ts),bode_opt)
+    bodeplot(tf(R,S,Ts),bode_opt)   % controller freq. response
     grid on,zoom on
     title('Frequency response of the feedback controller')
     S_func = feedback(1,tf(R,S,Ts,'variable','z^-1')*tf(B,A,Ts,'variable','z^-1'));
     figure, bodeplot(S_func,bode_opt)
+    title('Frequency response of the closed-loop system')
     figure, bodeplot(tf(B,A,Ts,'variable','z^-1'),bode_opt)
+    title('Frequency response of the plant')
 
     L       = length(bruitbench);
     NFFT    = 2^nextpow2(L);
@@ -187,7 +210,7 @@ simuName    = 'simulator_1bd_submit';
 %% Narrow band disturbances define
 % Frequencies to be tested
 if SW_ONE_SIMU_TEST % testing a single frequency
-    freq_test   = 55; % change to desired region if required
+    freq_test   = 60; % change to desired region if required
 else                % testing the entire frequency
     freq_test   = 50:5:95;
 end % SW_ONE_SIMU_TEST
@@ -300,10 +323,10 @@ if FLAG_DIST_FREQ == FLAG_CONST_DIST_FREQ
         end
         pause(10); % let the CPU take a 10-sec rest
     end
-    disp ('===================================================================')
-    disp ('test results saved to: level1_freq_dom_result_const_freq')
-    disp ('                       level1_time_dom_result_const_freq')
-    disp ('raw data saved to:     data_cont_freq')
+%     disp ('===================================================================')
+%     disp ('test results saved to: level1_freq_dom_result_const_freq')
+%     disp ('                       level1_time_dom_result_const_freq')
+%     disp ('raw data saved to:     data_cont_freq')
     if SW_SAVE_DATA
         save(['level1_test_result_',date,'\level1_time_dom_result_const_freq'],...
             'level1_time_dom_result_const_freq');
@@ -496,9 +519,9 @@ elseif FLAG_DIST_FREQ == FLAG_STEP_CHANGE_DIST_FREQ
     end
     level1_time_dom_result_step_change_freq.freq_table =...
         freq_table;
-    disp ('===================================================================')
-    disp ('test results saved to: level1_time_dom_result_step_change_freq')
-    disp ('raw data saved to:     data_step_freq')
+%     disp ('===================================================================')
+%     disp ('test results saved to: level1_time_dom_result_step_change_freq')
+%     disp ('raw data saved to:     data_step_freq')
     if SW_SAVE_DATA
         try
             movefile('*.fig',['level1_test_result_',date])
@@ -712,9 +735,9 @@ elseif FLAG_DIST_FREQ == FLAG_CHIRP_DIST
         end
         pause(10); % let the CPU take a 10-sec rest
     end
-    disp ('===================================================================')
-    disp ('test results saved to: level1_time_dom_result_chirp_freq')
-    disp ('raw data saved to:     data_chirp_freq')
+%     disp ('===================================================================')
+%     disp ('test results saved to: level1_time_dom_result_chirp_freq')
+%     disp ('raw data saved to:     data_chirp_freq')
     if SW_SAVE_DATA
         try
             movefile('*.fig',['level1_test_result_',date])
@@ -726,3 +749,29 @@ elseif FLAG_DIST_FREQ == FLAG_CHIRP_DIST
             'data_chirp_freq');
     end
 end
+
+%% work space
+% 2.d.i
+% from (7) in Chen 2015
+alpha_2d = 0.80;
+Qnum = [(alpha_2d - 1)*theta1_true, (alpha_2d^2 - 1)];
+Qden = [1, alpha_2d*theta1_true, alpha_2d^2];
+
+tf_IIR = tf(Qnum,Qden,Ts,'Variable','z^-1');
+tf_FIR = tf([-theta1_true, -1],1,Ts,'Variable','z^-1');
+
+figure('Position',[100,100,560,350]);
+subplot(1,2,1);
+bode(tf_IIR,'b');
+hold on;
+bode(tf_FIR,'r--',bode_opt);
+legend('IIR','FIR','location','best');
+title('Frequency response of Q(z^{-1})');
+
+tf_delay = tf([0,1],1,Ts,'Variable','z^-1');
+subplot(1,2,2);
+bode(1-tf_delay*tf_IIR,'b',bode_opt);
+hold on;
+bode(1-tf_delay*tf_FIR,'r--',bode_opt);
+legend('IIR','FIR','location','best');
+title('Frequency response of 1 - z^{-1}Q(z^{-1})');
